@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>elem-ui checkbox for-for</title>
+	<link rel="stylesheet" href="https://unpkg.com/element-ui/lib/theme-default/index.css">
+    <script src="https://unpkg.com/vue/dist/vue.js"></script>
+    <script src="https://unpkg.com/element-ui/lib/index.js"></script>
+</head>
+<body>
+  <div id="app">
+	<template>
+		<div v-for="(city,index) in selClassifyData" class="classifyBox">
+            <el-checkbox class="oneClassify" :label="city.id" :key="city.id" :ref="city.id" @change ="handleCheckAllChange( $event, city.children)" v-model='city.checkAll'>{{city.category_name}}</el-checkbox>
+            <el-checkbox-group v-model="ruleForm.category" class="twoClassify" >
+                <el-checkbox v-for="data in city.children" :label="data.id" :key="data.id" @change ="isChecked(index,city.children)">{{data.category_name}}
+                </el-checkbox>
+            </el-checkbox-group>
+		</div>
+	</template>
+  </div>
+</body>
+<script type="text/javascript">
+const selClassifyData = [
+	{
+  	id: 101,
+    category_name: '球类',
+    children:[
+    	{
+      	id: 2430543,
+        category_name: '篮球'
+      },
+      {
+      	id: 765576,
+        category_name: '足球'
+      },
+      {
+      	id: 9898,
+        category_name: '高尔夫球'
+      }
+    ]
+  },
+  {
+  	id: 103,
+    category_name: '家具',
+    children:[
+    	{
+      	id: 987998,
+        category_name: '床'
+      },
+      {
+      	id: 76598576,
+        category_name: '柜子'
+      },
+      {
+      	id: 87789,
+        category_name: '桌几'
+      },
+      {
+      	id: 87788889,
+        category_name: '板凳'
+      },
+      {
+      	id: 87788888889,
+        category_name: '床垫'
+      }
+    ]
+  }
+]
+var Main = {
+    el: '#app',
+	data () {
+		return {
+			checkAll: true,
+			ruleForm: {
+				category: []
+			},
+			selClassifyData: selClassifyData
+		}
+	},
+	created () {
+		this.categoryClassify()
+	},
+	methods: {
+       // 全选
+      handleCheckAllChange(event,data) {
+        let current = data.map(n => n.id)
+        if (event.target.checked) {
+          this.ruleForm.category = this.ruleForm.category.concat(current)
+        } else {
+          const nSet = new Set(current)
+          const setdifference = Array.from(new Set(current.concat(this.ruleForm.category).filter(v => !nSet.has(v))))
+          this.ruleForm.category = setdifference
+        }
+      },
+      // 单选
+      isChecked(groupIndex,data){
+        let checkboxId = data.map(res => res.id)
+        let checkedCount = 0
+        let checkedCategory = this.ruleForm.category
+        checkboxId.forEach((el)=>{
+          if(checkedCategory.includes(el)){
+            checkedCount += 1
+          }
+        })
+        this.$set(this.selClassifyData[groupIndex], 'checkAll', checkedCount===checkboxId.length)
+      },
+       // 关联分类
+       categoryClassify () {
+         // 模拟接口
+         setTimeout(()=>{
+        	this.selClassifyData.forEach((el)=>{
+          	this.$set(el,'checkAll',false)
+          })
+           // alert(this.selClassifyData)
+         },200)
+       }
+    }
+}
+ var Demo = Vue.extend(Main)
+ new Demo().$mount('#app')
+</script>
+</html>
+<!--
+  思路：
+      全选 -> 通过判断全选为选中状态时，对新选中和之前选中的进行拼接数组，非选中时，求 差集 排除掉当前非选中的值
+      单选 -> 定一个变量，当单选时判断全部元素里的每条数据的children子数据是否都包含在单选数据中，包含则加1 ，当长度相等时代表全部选中
+
+  elem-ui 组件内 checkbox
+  当v-for 嵌套 v-for 时 要想在二级拿到一级的index 直接定义不同的index就行
+
+  当遍历时想给每一个元素定义唯一的id 可以动态设置 :ref = "xx.name"
+
+  使用 ES6 提供的新的数据结构set，它类似与数组，但其值唯一没有重复，它本身是一个构造函数用来生成set数据结构 new Set()
+  参数可以是数组或者类数组
+
+  -Set 实列 的操作方法：
+
+       - 可通过add 向Set结构中加入成员
+            const s = new Set();
+            [2, 3, 5, 4, 5, 2, 2].forEach(x => s.add(x));
+            for (let i of s) {
+              console.log(i);
+            }
+            // 2 3 5 4
+       - delete(val)  删除某个值，返回一个布尔值，表示删除是否成功
+       - has(val)  返回一个布尔值，表示该值是否为Set成员，上面例子中有用到
+       - clear()   清除所有成员，没有返回值
+       - Array.from 方法可以将Set结构转为数组
+         例：给数组去重
+            function dedupe(array){
+              return Array.from(new Set(array))
+            }
+            dedupe([1,1,2,3]) // [1,2,3]
+
+   -Set 实列的遍历方法 【Set结构键名和键值是同一个值】
+       - keys() 返回键名的遍历器
+       - values() 返回键值的遍历器
+       - entries() 返回键值对的遍历器
+       - forEach() 使用回调函数遍历每个成员
+
+   - for ... of
+     forEach 遍历数组时缺陷是不能使用break、return 语句
+     for ... in 缺陷是遍历索引值是string而非number，某些情况下遍历数组元素顺序是任意的
+     for ... of 循环遍历数据如数组中的单值并解决上面两个的缺陷问题
+
+  - 扩展运算符（...）
+  - Set 结构很容易实现并集、交集、差集
+
+        let a = new Set([1, 2, 3]);
+        let b = new Set([4, 3, 2]);
+        // 并集
+        let union = new Set([...a, ...b]);
+        // Set {1, 2, 3, 4}
+
+        // 交集
+        let intersect = new Set([...a].filter(x => b.has(x)));
+        // set {2, 3}
+
+        // 差集
+        let difference = new Set([...a].filter(x => !b.has(x)));
+        // Set {1}
+-->
